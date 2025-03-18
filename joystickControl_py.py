@@ -10,8 +10,8 @@ class JoystickController:
         self.joystick.init()
         print(f"Initialized Joystick: {self.joystick.get_name()}")
         self.prev_1 = self.prev_2 = 0
-        self.pump_1 = self.pump_2 = self.pump_3 = self.pump_4 = self.pump_5 = self.pump_6 = 0
-        self.pwm_1 = self.pwm_2 = self.pwm_3 = self.pwm_4 = self.pwm_5 = self.pwm_6 = 0
+        self.pump_1 = self.pump_3 = self.pump_4 = self.pump_6 = 0
+        self.pwm_1 = self.pwm_3 = self.pwm_4 = self.pwm_6 = 0
         self.thruster_1 = self.thruster_2 = 1500
         self.gripper_1, self.gripper_2 = False, False
 
@@ -22,21 +22,15 @@ class JoystickController:
         pygame.event.pump()
         os.system("cls" if os.name == "nt" else "clear")
 
-        x_axis = self.joystick.get_axis(0)
+        
         y_axis = self.joystick.get_axis(1)
 
-        if abs(y_axis) > abs(x_axis):
-            pwm = int(abs(y_axis) * 255)
-            self.pwm_1 = self.pwm_2 = self.pwm_3 = self.pwm_4 = self.pwm_5 = self.pwm_6 = pwm
-            self.pump_1 = self.pump_2 = self.pump_3 = self.pump_4 = self.pump_5 = self.pump_6 = 1 if y_axis > 0 else 0
-        elif abs(x_axis) > abs(y_axis):
-            pwm = int(abs(x_axis) * 255)
-            self.pwm_1 = self.pwm_3 = self.pwm_4 = self.pwm_6 = pwm
-            self.pwm_2 = self.pwm_5 = 0
-            if x_axis > 0:
-                self.pump_1, self.pump_3, self.pump_4, self.pump_6 = 0, 0, 1, 1
-            else:
-                self.pump_1, self.pump_3, self.pump_4, self.pump_6 = 1, 1, 0, 0
+        
+        pwm = int(abs(y_axis) * 255)
+        self.pwm_1 = self.pwm_3 = self.pwm_4 = self.pwm_6 = pwm
+        self.pump_1 = self.pump_3 = self.pump_4 = self.pump_6 = 1 if y_axis > 0 else 0
+        
+    
 
         up_down = self.joystick.get_axis(2)
         if up_down < 0:
@@ -58,9 +52,9 @@ class JoystickController:
 
         if self.prev_1 == 0 and self.joystick.get_button(0) == 1:
             self.gripper_1 = not self.gripper_1
-        self.prev_1 = self.joystick.get_button(0
+        self.prev_1 = self.joystick.get_button(0)
                                                 
-                                                )
+                                                
         if self.prev_2 == 0 and  self.joystick.get_button(1):
             self.gripper_2 = not self.gripper_2
         self.prev_2 = self.joystick.get_button(1)
@@ -70,12 +64,12 @@ class JoystickController:
         return (
             f"{self.thruster_1:04d}{self.thruster_2:04d}"
             f"{self.pump_1}{self.pwm_1:03d}"
-            f"{self.pump_2}{self.pwm_2:03d}"
+            
             f"{self.pump_3}{self.pwm_3:03d}"
             f"{self.pump_4}{self.pwm_4:03d}"
-            f"{self.pump_5}{self.pwm_5:03d}"
+          
             f"{self.pump_6}{self.pwm_6:03d}"
-            f"{int(self.gripper_1)}{int(self.gripper_2)}\n"
+            f"{int(self.gripper_1)}{int(self.gripper_2)}"
         )
 
 
