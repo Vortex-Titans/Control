@@ -47,11 +47,10 @@ void setup() {
 void loop() {
 
     Ethernet.maintain(); 
-    if (!client.connected() || Ethernet.linkStatus() == 2) {
+    if (!client.connected() || Ethernet.linkStatus() == 2) { //the function Ethernet.linkStatus() returns 1 if the cable connected , 2 if the cable is not connected
         Serial.println("Lost connection to server. Reconnecting...");
-        // resetEthernet();
-        reconnectToServer();
-        // Serial.println("Done");
+        // resetEthernet(); //this function to reset the modul on oin number 8 but we didn't use it in the final test
+        reconnectToServer(); //function to reconnect to the server
     }
 
     while (client.available()) {
@@ -63,7 +62,6 @@ void loop() {
         delay(50);
     }
     delay(50);
-    // Serial.println("Im out");
 }
 
 // Function to reset the W5500 module
