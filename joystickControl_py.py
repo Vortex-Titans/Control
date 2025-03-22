@@ -35,20 +35,26 @@ class JoystickController:
         pygame.event.pump()
         os.system("cls" if os.name == "nt" else "clear")
 
-        
+        x_axis = self.joystick.get_axis(0)
         y_axis = self.joystick.get_axis(1)
 
         
-        pwm = int(abs(y_axis) * 255)
-        self.pwm_1 = self.pwm_3 = self.pwm_4 = self.pwm_6 = pwm
-        self.pump_1 = self.pump_3 = self.pump_4 = self.pump_6 = 1 if y_axis > 0 else 0
-        
+        if abs(x_axis) > abs(y_axis):
+
+            pwm = int(abs(x_axis) * 255)
+            self.pwm_1 = self.pwm_3 = self.pwm_4 = self.pwm_6 = pwm
+            self.pump_1 = self.pump_3 = self.pump_4 = self.pump_6 = 1 if x_axis > 0 else 0
+        elif abs(y_axis) > abs(x_axis):
+
+            pwm = int(abs(y_axis) * 255)
+            self.pwm_1 = self.pwm_3 = self.pwm_4 = self.pwm_6 = pwm
+            self.pump_1 = self.pump_3 = self.pump_4 = self.pump_6 = 1 if y_axis > 0 else 0
     
 
         up_down = self.joystick.get_axis(3)
-        if up_down < 0:
+        if up_down < 0.1:
             self.thruster_1 = self.thruster_2 = int(JoystickController.map_value(abs(up_down),0,1,1500,1200))
-        elif up_down > 0:
+        elif up_down > 0.1:
             self.thruster_1 =  self.thruster_2 = int(JoystickController.map_value(up_down,0,1,1500,1800))
 
         rotate_right = self.joystick.get_axis(4)
