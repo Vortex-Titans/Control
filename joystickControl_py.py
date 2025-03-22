@@ -19,6 +19,9 @@ class JoystickController:
 
         while pygame.joystick.get_count() == 0:
             #WAITS FOR THE CONNECTION 
+            pygame.time.wait(100)
+            pygame.joystick.quit()
+            pygame.joystick.init()
             print("waiting for connection")
             pygame.time.wait(1000)
         self.joystick = pygame.joystick.Joystick(0)
@@ -26,7 +29,7 @@ class JoystickController:
 
     def is_joystick_connected(self):
         #checks for connection
-        return self.joystick is not None and pygame.joystick.get_count()
+        return pygame.joystick.get_count() and self.joystick.get_init()
 
     def map_value(x, in_min, in_max, out_min, out_max):
         return (x - in_min) / (in_max - in_min) * (out_max - out_min) + out_min
@@ -43,7 +46,12 @@ class JoystickController:
 
             pwm = int(abs(x_axis) * 255)
             self.pwm_1 = self.pwm_3 = self.pwm_4 = self.pwm_6 = pwm
-            self.pump_1 = self.pump_3 = self.pump_4 = self.pump_6 = 1 if x_axis > 0 else 0
+            if x_axis > 0 :
+                
+                self.pump_1, self.pump_3, self.pump_4, self.pump_6 = 0, 0, 1, 1
+            else:
+                self.pump_1, self.pump_3, self.pump_4, self.pump_6 = 1,1,0,0
+            
         elif abs(y_axis) > abs(x_axis):
 
             pwm = int(abs(y_axis) * 255)
