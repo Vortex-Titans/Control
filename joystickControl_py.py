@@ -48,9 +48,9 @@ class JoystickController:
             self.pwm_1 = self.pwm_3 = self.pwm_4 = self.pwm_6 = pwm
             if x_axis > 0 :
                 
-                self.pump_1, self.pump_3, self.pump_4, self.pump_6 = 0, 0, 1, 1
+                self.pump_1, self.pump_3, self.pump_4, self.pump_6 = 0, 1, 0, 1
             else:
-                self.pump_1, self.pump_3, self.pump_4, self.pump_6 = 1,1,0,0
+                self.pump_1, self.pump_3, self.pump_4, self.pump_6 = 1,0,1,0
             
         elif abs(y_axis) > abs(x_axis):
 
@@ -60,11 +60,12 @@ class JoystickController:
     
 
         up_down = self.joystick.get_axis(3)
-        if up_down < 0.1:
+        if up_down < -0.1:
             self.thruster_1 = self.thruster_2 = int(JoystickController.map_value(abs(up_down),0,1,1500,1200))
         elif up_down > 0.1:
             self.thruster_1 =  self.thruster_2 = int(JoystickController.map_value(up_down,0,1,1500,1800))
-
+        else:
+            self.thruster_1 = self.thruster_2 = 1500
         rotate_right = self.joystick.get_axis(4)
         if rotate_right != -1:
             pwm = int(255 * JoystickController.map_value(rotate_right, -1, 1, 0, 1))
