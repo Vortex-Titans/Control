@@ -1,6 +1,6 @@
 import pygame
 import os
-
+import time
 
 class JoystickController:
     def __init__(self):
@@ -110,6 +110,7 @@ class JoystickController:
                 msg = self.get_message()
                 print(msg)  # Print the message to the console
                 print("Message Length:", len(msg))
+                time.sleep(0.06)
             
 
 if __name__ == "__main__":

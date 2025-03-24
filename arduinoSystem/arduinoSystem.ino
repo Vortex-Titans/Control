@@ -47,10 +47,11 @@ void setup() {
 void loop() {
 
     Ethernet.maintain(); 
-    if (!client.connected() || Ethernet.linkStatus() == 2) { //the function Ethernet.linkStatus() returns 1 if the cable connected , 2 if the cable is not connected
+    if (!client.connected() || Ethernet.linkStatus() == 2) {
         Serial.println("Lost connection to server. Reconnecting...");
-        // resetEthernet(); //this function to reset the modul on oin number 8 but we didn't use it in the final test
-        reconnectToServer(); //function to reconnect to the server
+        // resetEthernet();
+        reconnectToServer();
+        // Serial.println("Done");
     }
 
     while (client.available()) {
@@ -62,6 +63,7 @@ void loop() {
         delay(50);
     }
     delay(50);
+    // Serial.println("Im out");
 }
 
 // Function to reset the W5500 module
@@ -92,7 +94,7 @@ void reconnectToServer() {
     delay(1000);  // Small delay to prevent rapid retries
     if (!client.connect(server, serverPort)) {
         Serial.println("Retrying connection...");
-        // resetEthernet();
+        resetEthernet();
         delay(500);
     }
     // Serial.println("Reconnected!");
@@ -107,14 +109,6 @@ void sendPHData() {
     client.println(Sph);
 }
 
-// Function to control all devices
-void moveAll(String message) {
-    moveThrusters(message);
-    moveBilges(message);
-    moveGrippers(message);
-}
-
-// Function to control thrusters
 void moveThrusters(String message) {
     String thruster1Val = message.substring(0, 4);
     String thruster2Val = message.substring(4, 8);
@@ -122,9 +116,8 @@ void moveThrusters(String message) {
     thruster2.writeMicroseconds(thruster2Val.toInt());
 }
 
-// Function to control bilge pumps
 void moveBilges(String message) {
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 4; i++) {
         String bilgePwmVal = message.substring(8 + i * 4, 11 + i * 4);
         String bilgeControlVal = message.substring(11 + i * 4, 12 + i * 4);
         analogWrite(bilgePwmPins[i], bilgePwmVal.toInt());
@@ -132,10 +125,15 @@ void moveBilges(String message) {
     }
 }
 
-// Function to control grippers
 void moveGrippers(String message) {
-    String gripper1Val = message.substring(32, 33);
-    String gripper2Val = message.substring(33, 34);
+    String gripper1Val = message.substring(24, 25);
+    String gripper2Val = message.substring(25, 26);
     digitalWrite(gripper1Pin, gripper1Val.toInt());
     digitalWrite(gripper2Pin, gripper2Val.toInt());
+}
+
+void moveAll(String message) {
+    moveThrusters(message);
+    moveBilges(message);
+    moveGrippers(message);
 }

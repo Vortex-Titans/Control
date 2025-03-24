@@ -35,7 +35,8 @@ while True:
 
     try:
         msg=joystick.get_message()
-        print(msg,"\n")
+        msg += "\n"
+        print(msg)
         client.send(msg.encode())
 
         data = client.recv(4).decode()
