@@ -100,6 +100,7 @@ class JoystickController:
           
             f"{self.pump_6}{self.pwm_6:03d}"
             f"{int(self.gripper_1)}{int(self.gripper_2)}"
+            f"{self.servo_motor:03d}"
         )
 
 
