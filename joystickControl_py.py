@@ -98,12 +98,12 @@ class JoystickController:
     def get_message(self):
         return (
             f"{self.thruster_1:04d}{self.thruster_2:04d}"
-            f"{self.pump_1}{self.pwm_1:03d}"
+            f"{self.pwm_1:03d}{self.pump_1}"
             
-            f"{self.pump_3}{self.pwm_3:03d}"
-            f"{self.pump_4}{self.pwm_4:03d}"
+            f"{self.pwm_3:03d}{self.pump_3}"
+            f"{self.pwm_4:03d}{self.pump_4}"
           
-            f"{self.pump_6}{self.pwm_6:03d}"
+            f"{self.pwm_6:03d}{self.pump_6}"
             f"{int(self.gripper_1)}{int(self.gripper_2)}"
             f"{self.servo_motor:03d}"
         )
