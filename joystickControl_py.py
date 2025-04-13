@@ -88,11 +88,11 @@ class JoystickController:
         self.prev_2 = self.joystick.get_button(1)
 
         if self.prev_3 == 0 and self.joystick.get_button(2) == 1:
-            self.servo_motor = (self.servo_motor + 90) % 360
+            self.servo_motor = (self.servo_motor + 10) % 360
         self.prev3 = self.joystick.get_button(2)
 
         if self.prev_4 == 0 and self.joystick.get_button(3) == 1:
-            self.servo_motor = (self.servo_motor - 90) % 360
+            self.servo_motor = (self.servo_motor - 10) % 360
         self.prev_4 = self.joystick.get_button(3)
 
     def get_message(self):
