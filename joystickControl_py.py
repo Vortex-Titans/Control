@@ -8,13 +8,13 @@ class JoystickController:
         pygame.joystick.init()
         self.connect_joystick()
         print(f"Initialized Joystick: {self.joystick.get_name()}")
-        self.prev_1 = self.prev_2 = self.prev_3 = self.prev_4 = 0
+        self.prev_1 = self.prev_2 = self.prev_3 = self.prev_4 = self.prev_5 = 0
         self.pump_1 = self.pump_3 = self.pump_4 = self.pump_6 = 0
         self.pwm_1 = self.pwm_3 = self.pwm_4 = self.pwm_6 = 0
         self.thruster_1 = self.thruster_2 = 1500
         self.gripper_1, self.gripper_2 = False, False
         self.servo_motor = 0
-
+        self.suction_tool = False
     def connect_joystick(self):
 
         while pygame.joystick.get_count() == 0:
@@ -95,6 +95,9 @@ class JoystickController:
             self.servo_motor = (self.servo_motor - 10) % 180
         self.prev_4 = self.joystick.get_button(3)
 
+        if self.prev_5 == 0 and self.joystick.get_button(4) == 1:
+            self.suction_tool = not self.suction_tool
+        self.prev_5 = self.joystick.get_button(4)
     def get_message(self):
         return (
             f"{self.thruster_1:04d}{self.thruster_2:04d}"
@@ -105,7 +108,7 @@ class JoystickController:
           
             f"{self.pwm_6:03d}{self.pump_6}"
             f"{int(self.gripper_1)}{int(self.gripper_2)}"
-            f"{self.servo_motor:03d}"
+            f"{self.servo_motor:03d}{int(self.suction_tool)}"
         )
 
 
