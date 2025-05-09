@@ -1,5 +1,7 @@
 from PySide6.QtCore import Qt , QTimer
 from PySide6.QtGui import QPixmap
+import pyttsx3
+import winsound
 
 class WindowControls:
     def __init__(self, main_window):
@@ -18,6 +20,8 @@ class WindowControls:
         self.main_window.start.clicked.connect(self.start_timer)
         self.main_window.pause.clicked.connect(self.pause_timer)
         self.main_window.reset.clicked.connect(self.reset_timer)
+        self.engine = pyttsx3.init()
+
 
     def hide_sensor(self):
         if self.main_window.is_hidden:
@@ -48,14 +52,23 @@ class WindowControls:
 
         else:
             self.timer.stop()
+            winsound.Beep(1000, 1000)
+            
 
     def start_timer(self):
         self.timer.start(1000)
+        self.engine = pyttsx3.init()
+        self.engine.say("Timer Started!")
+        self.engine.runAndWait()
+
 
     def pause_timer(self):
         self.timer.stop()
-
+        self.engine.say("Timer Paused!")
+        self.engine.runAndWait()
     def reset_timer(self):
         self.timer.stop()
         self.time_remaining = 15 * 60
         self.main_window.timer_label.setText("15:00")
+        self.engine.say("Timer Reset!")
+        self.engine.runAndWait()

@@ -5,11 +5,12 @@ from PySide6.QtCore import QThread, Signal
 class socketServer(QThread):
     sensors_signal = Signal(str)
     connection_signal = Signal(str)
+
     def __init__(self):
         super().__init__()
         self.message = "None"  # Default message
         self.connected = False
-        self.HOST = '192.168.33.11'  # PC's static IP (same subnet as Arduino)
+        self.HOST = '192.168.33.1'  # PC's static IP (same subnet as Arduino)
         self.PORT = 1222  # Port to listen on
         self.initSocket()
         self.start()

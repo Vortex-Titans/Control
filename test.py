@@ -1,131 +1,87 @@
-# # import cv2
-# # # Define the GStreamer pipeline
-# # gst_pipeline = (
-# #     "rtspsrc latency=0 location=rtsp://admin:vortex2025@192.168.33.52:554/Streaming/Channels/101 ! queue max-size-buffers=0 max-size-bytes=0 max-size-time=0 ! decodebin ! videoconvert ! video/x-raw,width=1920,height=1080 ! appsink"
-# # )
-# # # Open the GStreamer pipeline
-# # cap = cv2.VideoCapture(gst_pipeline, cv2.CAP_GSTREAMER)
-# # if not cap.isOpened():
-# #     print("Error: Unable to open GStreamer pipeline.")
-# #     exit()
-# # # Main loop to read and display frames
-# # while True:
-# #     ret, frame = cap.read()
-# #     if not ret:
-# #         print("Error: Unable to retrieve frame from GStreamer pipeline.")
-# #         break
-# #     frame = cv2.resize(frame, (576, 1024))
-# #     cv2.imshow("720p RTSP Camera Feed", frame)
-# #     # Exit on pressing 'q'
-# #     if cv2.waitKey(1) & 0xFF == ord('q'):
-# #         break
-# # # Cleanup
-# # cap.release()
-# # cv2.destroyAllWindows()
-# # # rtspsrc latency=0 location=rtsp://admin:VortexROV2025@192.168.33.52:554/Streaming/Channels/101 ! queue max-size-buffers=0 max-size-bytes=0 max-size-time=0 ! decodebin ! videoconvert ! video/x-raw,width=1920,height=1080 ! appsink max-buffers=1 drop=true
-# #  #"rtspsrc latency=0 location=rtsp://admin:VortexROV2025@192.168.33.52:554/Streaming/Channels/101 ! queue max-size-buffers=0 max-size-bytes=0 max-size-time=0 ! decodebin ! videoconvert ! videoflip video-direction=3 ! video/x-raw,width=1080,height=1920 ! appsink max-buffers=1 drop=true"
-# #     # "rtspsrc latency=0 location=rtsp://admin:VortexROV2025@192.168.33.63:554/Streaming/Channels/102 ! queue max-size-buffers=0 max-size-bytes=0 max-size-time=0 ! decodebin ! videoconvert ! video/x-raw,width=640,height=480 ! appsink max-buffers=1 drop=true"
-# #     #   "rtspsrc latency=0 location=rtsp://admin:VortexROV2025@192.168.33.65:554/Streaming/Channels/102 ! queue max-size-buffers=0 max-size-bytes=0 max-size-time=0 ! decodebin ! videoconvert ! video/x-raw,width=640,height=480 ! appsink max-buffers=1 drop=true"
-# #     # "rtspsrc latency=0 buffer-mode=0 location=rtsp://admin:VortexROV2025@192.168.33.67:554/Streaming/Channels/101 ! "
-# #     # "queue max-size-buffers=0 max-size-bytes=0 max-size-time=0 ! decodebin ! "
-# #     # "videoconvert ! "
-# #     # "video/x-raw,width=1920,height=1080,framerate=30/1 ! appsink max-buffers=1 drop=true"
-# #     # "rtspsrc latency=0 location=rtsp://admin:VortexROV2025@192.168.33.64:554/Streaming/Channels/101 ! "
-# #     # "queue max-size-buffers=0 max-size-bytes=0 max-size-time=0 ! decodebin ! videoconvert ! "
-# #     # "videoflip video-direction=4 ! video/x-raw,width=576,height=1024 ! appsink max-buffers=1 drop=true"
-# import cv2
-# from PySide6.QtCore import QObject, Signal ,QThread
-# from PySide6.QtGui import QImage
-
-# class CameraStream(QThread):
-#     frame_ready = Signal(QImage)  # Signal to emit QImage frames
-
-#     def __init__(self, rtsp_url):
-#         """Initialize the camera stream with the RTSP URL"""
-#         super().__init__()  # Initialize QObject
-#         self.rtsp_url = rtsp_url
-#         self.cap = cv2.VideoCapture(self.rtsp_url, cv2.CAP_GSTREAMER)
-#         self.running = True  # Control loop executions
-
-#         if not self.cap.isOpened():
-#             print("Error: Failed to open RTSP stream.")
-    
-#     def convert_frame_to_qimage(self, frame):
-#         """Convert an OpenCV BGR frame to a QImage"""
-#         if frame is None:
-#             return None
-
-#         height, width, channel = frame.shape
-#         bytes_per_line = 3 * width  # 3 channels (RGB)
-
-#         # Convert BGR to RGB (since OpenCV uses BGR by default)
-#         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-#         # Create QImage from frame data
-#         qimg = QImage(frame_rgb.data, width, height, bytes_per_line, QImage.Format_RGB888)
-#         return qimg
-
-#     def run(self):  # Use `run` instead of `start` when using QThread
-#         """Start streaming from the RTSP source without displaying OpenCV window"""
-#         if not self.cap.isOpened():
-#             print("Error: Cannot start streaming. RTSP stream is not opened.")
-#             return
-
-#         while self.running:
-#             ret, frame = self.cap.read()
-#             if not ret:
-#                 print("Error: Failed to grab frame.")
-#                 break  # Exit if no frames received
-            
-#             # Convert frame to QImage
-#             qimg = self.convert_frame_to_qimage(frame)
-
-#             # if qimg is not None:
-#             #     self.frame_ready.emit(qimg)  # Emit the QImage as a signal
-            
-            
-#             cv2.imshow("Camera Stream", frame)
-
-#             # Press 'q' to exit (optional if controlled via GUI)
-#             if cv2.waitKey(1) & 0xFF == ord('q'):
-#                 break
-
-#     # Release resources when exiting
-#         self.stop()
-
-
-#     def stop(self):
-#         """Stop streaming and release resources"""
-#         self.running = False  # Stop the loop
-#         self.quit()  # Quit the QThread safely
-#         self.wait()
-
-
-# # RTSP Stream URL
-# RTSP_URL = ("rtspsrc latency=0 location=rtsp://admin:vortex2025@192.168.33.51:554/Streaming/Channels/101 ! queue max-size-buffers=0 max-size-bytes=0 max-size-time=0 ! decodebin ! videoconvert ! video/x-raw,width=1920,height=1080 ! appsink")
-
-# # Start the stream
-# camera = CameraStream(RTSP_URL)
-# camera.start()
-import sys
 import cv2
-from PySide6.QtCore import Qt, Signal, QThread
-from PySide6.QtGui import QImage, QPixmap
-from PySide6.QtWidgets import QApplication, QLabel, QMainWindow, QVBoxLayout, QWidget
-
+from PySide6.QtCore import QThread, Signal, QTimer, Qt
+from PySide6.QtGui import QImage
+import numpy as np
 
 class CameraStream(QThread):
     frame_ready = Signal(QImage)  # Signal to emit QImage frames
+    reconnecting = Signal(str)    # Signal to indicate reconnection status
+    reconnect_requested = Signal() # Signal to request reconnection from main thread
 
     def __init__(self, rtsp_url):
         """Initialize the camera stream with the RTSP URL"""
         super().__init__()
         self.rtsp_url = rtsp_url
-        self.cap = cv2.VideoCapture(self.rtsp_url, cv2.CAP_GSTREAMER)
-        self.running = True  # Control loop executions
-
-        if not self.cap.isOpened():
-            print("Error: Failed to open RTSP stream.")
+        self.identifier = rtsp_url[62:64] if len(rtsp_url) > 64 else "main"  # Extract camera ID from URL or use default
+        self.cap = None
+        self.frame = None
+        
+        # Connection and reconnection settings
+        self.running = True
+        self.connected = False
+        self.reconnect_attempts = 0
+        self.max_reconnect_attempts = 10  # Maximum consecutive reconnection attempts
+        self.reconnect_delay = 0.5  # Delay between reconnection attempts in seconds
+        
+        # Connect the reconnect signal to try_reconnect method
+        self.reconnect_requested.connect(self.try_reconnect, Qt.QueuedConnection)
+        
+        # Start periodic reconnection attempts
+        self.reconnect_timer = QTimer(self)
+        self.reconnect_timer.timeout.connect(self.check_connection)
+        self.reconnect_timer.start(500)  # Check every 500ms
+    
+    def init_camera(self):
+        """Initialize the camera connection"""
+        if self.cap is not None:
+            self.cap.release()
+            self.cap = None
+            
+        try:
+            self.cap = cv2.VideoCapture(self.rtsp_url, cv2.CAP_GSTREAMER)
+            if self.cap.isOpened():
+                print(f"✅ Camera {self.identifier} connected")
+                self.reconnecting.emit(f"Camera {self.identifier} connected successfully")
+                self.connected = True
+                self.reconnect_attempts = 0  # Reset counter on successful connection
+                return True
+            else:
+                self.connected = False
+                self.cap = None
+                self.reconnecting.emit(f"Unable to connect to camera {self.identifier}")
+                return False
+        except Exception as e:
+            print(f"❌ Error connecting to camera {self.identifier}: {str(e)}")
+            self.reconnecting.emit(f"Error: {str(e)}")
+            self.connected = False
+            if self.cap:
+                self.cap.release()
+                self.cap = None
+            return False
+    
+    def try_reconnect(self):
+        """Attempt to reconnect to the camera"""
+        if self.connected:
+            return
+            
+        self.reconnect_attempts += 1
+        if self.reconnect_attempts % 5 == 0:
+            print(f"🔄 Attempting to reconnect camera {self.identifier} (attempt {self.reconnect_attempts})")
+            self.reconnecting.emit(f"Reconnection attempt {self.reconnect_attempts}...")
+            
+        if self.reconnect_attempts > self.max_reconnect_attempts:
+            print(f"⚠️ Giving up reconnection for camera {self.identifier} after {self.max_reconnect_attempts} attempts")
+            self.reconnecting.emit(f"Giving up after {self.max_reconnect_attempts} attempts. Will retry later.")
+            self.reconnect_attempts = 0  # Reset for future attempts
+            return
+            
+        self.init_camera()
+    
+    def check_connection(self):
+        """Periodically check connection status and trigger reconnection if necessary"""
+        if not self.connected:
+            print(f"🔄 Camera {self.identifier} is disconnected, attempting reconnection...")
+            self.try_reconnect()
 
     def convert_frame_to_qimage(self, frame):
         """Convert an OpenCV BGR frame to a QImage"""
@@ -143,84 +99,77 @@ class CameraStream(QThread):
         return qimg
 
     def run(self):
-        """Start streaming from the RTSP source"""
-        if not self.cap.isOpened():
-            print("Error: Cannot start streaming. RTSP stream is not opened.")
-            return
-
+        """Main loop for streaming from RTSP source"""
+        connected = self.init_camera()
+        if not connected:
+            print(f"🔄 Camera {self.identifier} will attempt reconnection in background...")
+            QTimer.singleShot(int(self.reconnect_delay * 1000), lambda: self.reconnect_requested.emit())
+        
+        consecutive_failures = 0
+        max_consecutive_failures = 5
+        
         while self.running:
-            ret, frame = self.cap.read()
-            if not ret:
-                print("Error: Failed to grab frame.")
-                break  # Exit if no frames received
+            if not self.connected or self.cap is None:
+                # Sleep briefly before next check to prevent CPU hogging
+                self.msleep(100)
+                continue
+                
+            try:
+                ret, frame = self.cap.read()
+                if not ret:
+                    consecutive_failures += 1
+                    if consecutive_failures == 1:
+                        print(f"❌ Camera {self.identifier} failed to read frame")
+                    
+                    if consecutive_failures >= max_consecutive_failures:
+                        print(f"⚠️ Camera {self.identifier} connection lost")
+                        self.reconnecting.emit(f"Stream lost, attempting to reconnect...")
+                        self.connected = False
+                        if self.cap:
+                            self.cap.release()
+                            self.cap = None
+                        self.reconnect_requested.emit()
+                    
+                    self.msleep(100)
+                    continue
+            except Exception as e:
+                print(f"❌ Error reading from camera {self.identifier}: {str(e)}")
+                self.reconnecting.emit(f"Error reading from stream: {str(e)}")
+                self.connected = False
+                if self.cap:
+                    self.cap.release()
+                    self.cap = None
+                self.reconnect_requested.emit()
+                self.msleep(100)
+                continue
 
-            # Convert frame to QImage
+            # Successfully read a frame
+            consecutive_failures = 0
+            self.frame = frame
+            
+            # Convert frame to QImage and emit it
             qimg = self.convert_frame_to_qimage(frame)
-
-            # Emit the QImage as a signal
             if qimg is not None:
                 self.frame_ready.emit(qimg)
-
-            # Exit on pressing 'q'
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-
-        # Ensure that cleanup is done properly
-        self.cleanup()
+                
+            # Process at a reasonable frame rate
+            self.msleep(10)  # Sleep for 10ms (~100 fps max)
 
     def stop(self):
         """Stop streaming and release resources"""
-        self.running = False  # Stop the loop
-        self.quit()  # Quit the QThread safely
-        self.wait()  # Wait for the thread to finish
+        self.running = False
+        self.quit()
+        self.wait()
+        self.cleanup()
 
     def cleanup(self):
         """Cleanup resources"""
-        if self.cap.isOpened():
+        if self.cap and self.cap.isOpened():
             self.cap.release()
-        cv2.destroyAllWindows()
+            self.cap = None
+        # No need to call destroyAllWindows since we're using Qt
 
-
-class CameraWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
-
-        self.setWindowTitle("RTSP Camera Stream")
-        self.setGeometry(100, 100, 800, 600)
-
-        # QLabel to display camera frames
-        self.label = QLabel(self)
-        self.label.setAlignment(Qt.AlignCenter)
-
-        # Layout to organize widgets
-        layout = QVBoxLayout()
-        layout.addWidget(self.label)
-
-        # Central widget
-        central_widget = QWidget(self)
-        central_widget.setLayout(layout)
-        self.setCentralWidget(central_widget)
-
-        # RTSP URL of the camera
-        self.rtsp_url = "rtspsrc latency=0 location=rtsp://admin:vortex2025@192.168.33.50:554/Streaming/Channels/101 ! decodebin ! videoconvert ! appsink"
-
-        # Create CameraStream instance
-        self.camera_stream = CameraStream(self.rtsp_url)
-        self.camera_stream.frame_ready.connect(self.update_frame)  # Connect signal to update_frame method
-        self.camera_stream.start()
-
-    def update_frame(self, qimg):
-        """Update the QLabel with the new frame"""
-        self.label.setPixmap(QPixmap.fromImage(qimg))
-
-    def closeEvent(self, event):
-        """Handle closing of the window"""
-        self.camera_stream.stop()  # Stop the camera stream thread
-        event.accept()
-
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = CameraWindow()
-    window.show()
-    sys.exit(app.exec())
+# Example usage:
+# RTSP_URL = "rtspsrc latency=0 location=rtsp://admin:vortex2025@192.168.33.51:554/Streaming/Channels/101 ! queue max-size-buffers=0 max-size-bytes=0 max-size-time=0 ! decodebin ! videoconvert ! video/x-raw,width=1920,height=1080 ! appsink"
+# camera = CameraStream(RTSP_URL)
+# camera.start()

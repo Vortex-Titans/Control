@@ -9,6 +9,7 @@ from socketServer import socketServer
 from sensorsReceiver import SensorsReceiver
 from test import CameraStream
 from cameraReciever import CameraViewer
+import pyttsx3
 class MainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self):
         super().__init__()
@@ -17,15 +18,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.setWindowFlags(Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.dragging = False
+        self.engine = pyttsx3.init()
         self.offset = QPoint()
         self.setupUi(self)
         
-        RTSP_URL = "rtspsrc latency=0 location=rtsp://admin:vortex2025@192.168.33.50:554/Streaming/Channels/102 ! queue max-size-buffers=0 max-size-bytes=0 max-size-time=0 ! decodebin ! videoconvert ! videoflip video-direction=2 ! videoscale ! video/x-raw,width=640,height=360 ! appsink max-buffers=1 drop=false"
-        RTSP_URL2 = "rtspsrc latency=0 location=rtsp://admin:vortex2025@192.168.33.52:554/Streaming/Channels/102 ! queue max-size-buffers=0 max-size-bytes=0 max-size-time=0 ! decodebin ! videoconvert ! videoflip video-direction=2 ! videoscale ! video/x-raw,width=640,height=360 ! appsink max-buffers=1 drop=false"
-
+        RTSP_URL = "rtspsrc latency=0 location=rtsp://admin:vortex2025@192.168.33.50:554/Streaming/Channels/102 ! queue max-size-buffers=0 max-size-bytes=0 max-size-time=0 ! decodebin ! videoconvert ! videoflip video-direction=2 ! video/x-raw,width=640,height=360 ! appsink max-buffers=1 drop=false"
+        RTSP_URL2 = "rtspsrc latency=0 location=rtsp://admin:vortex2025@192.168.33.52:554/Streaming/Channels/102 ! queue max-size-buffers=0 max-size-bytes=0 max-size-time=0 ! decodebin ! videoconvert ! videoflip video-direction=2 ! video/x-raw,width=640,height=360 ! appsink max-buffers=1 drop=false"
 
  
- 
+    
         self.Camera = CameraStream(RTSP_URL)
         self.Camera2 = CameraStream(RTSP_URL2)
         self.joystick = JoystickController()
@@ -38,14 +39,21 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         
         self.Camera.frame_ready.connect(self.cameraviewer.updateCamera1)
         self.Camera2.frame_ready.connect(self.cameraviewer.updateCamera2)
+
+        self.Camera.reconnecting.connect(self.update_reconnection_status)
+        self.Camera2.reconnecting.connect(self.update_reconnection_status)
+
         self.Camera.start()
         self.Camera2.start()
         self.joystick.message_signal.connect(self.movements.update_movements)
         # self.joystick.message_signal.connect(self.movements.receive_data)
-        self.joystick.message_signal.connect(self.sensor.update_label)
+        # self.joystick.message_signal.connect(self.sensor.update_label)
+
         self.joystick.message_signal.connect(self.socket.set_message)
+        
         self.socket.sensors_signal.connect(self.sensor.update_label)
         self.joystick.connection_signal.connect(self.movements.update_joystick_connection)
+        self.joystick.gain_signal.connect(self.movements.gainupdator)
         
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -75,10 +83,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if event.button() == Qt.LeftButton:
             self.dragging = False
             self.resizing = False
+    
+    def update_reconnection_status(self, status):
+        # Display the reconnection status to the user
+        print(status)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
     window = MainWindow()
+    window.engine.say("We Started!")
+    window.engine.runAndWait()
     window.show()
     sys.exit(app.exec())

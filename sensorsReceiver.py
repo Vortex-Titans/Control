@@ -8,13 +8,13 @@ class SensorsReceiver(QObject):
 
       def update_label(self,data):
         ph=(data[0:5])
-        pressure=(data[5:10])
-        roll=(data[10:14])
-        pitch=(data[14:18])
-        yaw=(data[18:22])
+        # pressure=(data[5:10])
+        # roll=(data[10:14])
+        # pitch=(data[14:18])
+        # yaw=(data[18:22])
         self.ui.PHValue.setText(ph)
-        self.ui.PressureValue.setText(pressure)
-        self.ui.IMUValue.setText(f"Roll: {roll}, Pitch: {pitch}, Yaw: {yaw}")
+        # self.ui.PressureValue.setText(pressure)
+        # self.ui.IMUValue.setText(f"Roll: {roll}, Pitch: {pitch}, Yaw: {yaw}")
         # self.ui.IMUValue.setFont(self.ui.IMUValue.font().setPointSize(9))
         # self.ui.IMUValue.setText(f"X: {roll}, Y: {pitch}, Z: {yaw}")
 

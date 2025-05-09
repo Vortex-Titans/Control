@@ -41,7 +41,7 @@ class JoystickController(QThread):
         return (x - in_min) / (in_max - in_min) * (out_max - out_min) + out_min
     def update_controls(self):
         pygame.event.pump()
-        os.system("cls" if os.name == "nt" else "clear")
+        # os.system("cls" if os.name == "nt" else "clear")
         y_axis = self.joystick.get_axis(1)
         x_axis = self.joystick.get_axis(0)
         if abs(y_axis) > abs(x_axis):
@@ -113,7 +113,7 @@ class JoystickController(QThread):
         # servo ,
         if self.prev_3 == 0 and self.joystick.get_button(2) == 1:
             self.servo_motor = (self.servo_motor + 10) % 180
-        self.prev3 = self.joystick.get_button(2)
+        self.prev_3 = self.joystick.get_button(2)
         if self.prev_4 == 0 and self.joystick.get_button(3) == 1:
             self.servo_motor = (self.servo_motor - 10) % 180
         self.prev_4 = self.joystick.get_button(3)
@@ -121,16 +121,18 @@ class JoystickController(QThread):
         if self.prev_5 == 0 and self.joystick.get_button(0) == 1:
             self.suction_tool = not self.suction_tool
         self.prev_5 = self.joystick.get_button(0)
+        
     def get_message(self):
         return (
-            f"{self.thruster_1:04d}{self.thruster_2:04d}"
-            f"{self.pwm_1:03d}{self.pump_1}"
-            f"{self.pwm_3:03d}{self.pump_3}"
-            f"{self.pwm_4:03d}{self.pump_4}"
-            f"{self.pwm_6:03d}{self.pump_6}"
+            f"{int(self.thruster_1):04d}{int(self.thruster_2):04d}"
+            f"{int(self.pwm_1):03d}{int(self.pump_1)}"
+            f"{int(self.pwm_3):03d}{int(self.pump_3)}"
+            f"{int(self.pwm_4):03d}{int(self.pump_4)}"
+            f"{int(self.pwm_6):03d}{int(self.pump_6)}"
             f"{int(self.gripper_1)}{int(self.gripper_2)}"
-            f"{self.servo_motor:03d}{int(self.suction_tool)}""\n"
+            f"{int(self.servo_motor):03d}{int(self.suction_tool)}\n"
         )
+
     def run(self):
      while True:
         if self.joystick is None or not self.is_joystick_connected():

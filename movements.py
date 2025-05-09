@@ -1,12 +1,42 @@
 from PySide6.QtCore import QThread, Signal, QObject
 from PySide6.QtGui import QPixmap
 from joystickControl import JoystickController
+import pyttsx3
+from queue import Queue
+import threading
 class Movements(QObject):
     def __init__(self, ui_instance):
         super().__init__()
         self.ui = ui_instance
         self.connection = None
+        self.gain = None
+        self.engine = pyttsx3.init()
+        self.speech_queue = Queue()
+        # Start a single thread for TTS
+        self.speech_thread = threading.Thread(target=self.speech_worker)
+        self.speech_thread.daemon = True
+        self.speech_thread.start()
         #self.data_signal.connect(self.receive_data)
+    def speech_worker(self):
+        """Worker thread that processes speech requests from the queue"""
+        engine = pyttsx3.init()
+        while True:
+            text = self.speech_queue.get()
+            try:
+                engine.say(text)
+                engine.runAndWait()
+            except Exception as e:
+                print(f"TTS Error: {e}")
+                # Reinitialize the engine if there was an error
+                try:
+                    engine = pyttsx3.init()
+                except Exception:
+                    pass
+            self.speech_queue.task_done()
+    
+    def speak(self, text):
+        """Add a text to the speech queue"""
+        self.speech_queue.put(text)
     def update_joystick_connection(self, data) :
         #print(status)
         # print(f"Updating connection status to: {data}")
@@ -24,6 +54,14 @@ class Movements(QObject):
           self.ui.gripper1.setPixmap(QPixmap(u":/Icons/icons/gripper1.png"))
     # def receive_data(self, data):
     #     self.ui.triaaaaal.setText(data)
+    def gainupdator(self, data):
+      if self.gain != data:
+          self.speak(f"Gain is {int(data*100)}%")
+          self.gain = data
+      
+      self.ui.gainlabel.setText(f"GAIN : {int(self.gain*100)}%")
+
+      self.ui.gainlabel.setText(f"GAIN : {int(self.gain*100)}%")
     def update_movements(self,data):
       # print(f"Updating connection status to: {self.connection}")
       # print(f"Updating connection status to: {data}")
@@ -41,23 +79,20 @@ class Movements(QObject):
       gripper_2 = bool(int(data[25]))
       servo=int(data[26:29])
       sample=bool(int(data[29]))
-      highest_pwm = max(bilge_1_pwm, bilge_2_pwm, bilge_3_pwm, bilge_4_pwm)
-      percentage = int((highest_pwm / 255) * 100)
-      self.ui.gainlabel.setText(f"GAIN : {percentage}%")
-      if bilge_1_control==1 and bilge_2_control==1 and bilge_3_control==1 and bilge_4_control==1 and bilge_1_pwm > 0 and bilge_2_pwm > 0 and bilge_3_pwm > 0 and bilge_4_pwm > 0 :
+      if bilge_1_control==1 and bilge_2_control==1 and bilge_3_control==1 and bilge_4_control==0 and bilge_1_pwm > 0 and bilge_2_pwm > 0 and bilge_3_pwm > 0 and bilge_4_pwm > 0 :
         self.ui.LeftStick.setPixmap(QPixmap(u":/Icons/icons/Left Stick Up.png"))
-      elif bilge_1_control==0 and bilge_2_control==0 and bilge_3_control==0 and bilge_4_control==0 :
+      elif bilge_1_control==0 and bilge_2_control==0 and bilge_3_control==0 and bilge_4_control==1 :
         self.ui.LeftStick.setPixmap(QPixmap(u":/Icons/icons/Left Stick Down.png"))
-      elif bilge_1_control==0 and bilge_2_control==1 and bilge_3_control==1 and bilge_4_control==0 :
+      elif bilge_1_control==0 and bilge_2_control==1 and bilge_3_control==1 and bilge_4_control==1 :
         self.ui.LeftStick.setPixmap(QPixmap(u":/Icons/icons/Left Stick Right.png"))
-      elif bilge_1_control==1 and bilge_2_control==0 and bilge_3_control==0 and bilge_4_control==1 :
+      elif bilge_1_control==1 and bilge_2_control==0 and bilge_3_control==0 and bilge_4_control==0 :
         self.ui.LeftStick.setPixmap(QPixmap(u":/Icons/icons/Left Stick Left.png"))
       else :
         self.ui.LeftStick.setPixmap(QPixmap(u":/Icons/icons/Left Stick.png"))
-      if bilge_3_control==1 and bilge_4_control==1 and bilge_1_control==0 and bilge_2_control==0 :
-        self.ui.yaw.setPixmap(QPixmap(u":/Icons/icons/YAWleft.png"))
-      elif bilge_1_control==1 and bilge_2_control==1 and bilge_3_control==0 and bilge_4_control==0  :
+      if bilge_3_control==1 and bilge_4_control==1 and bilge_1_control==0 and bilge_2_control==1 :
         self.ui.yaw.setPixmap(QPixmap(u":/Icons/icons/YAWright.png"))
+      elif bilge_1_control==0 and bilge_2_control==0 and bilge_3_control==1 and bilge_4_control==1  :
+        self.ui.yaw.setPixmap(QPixmap(u":/Icons/icons/YAWleft.png"))
       else :
         self.ui.yaw.setPixmap(QPixmap(u":/Icons/icons/YAW (1).png"))
       if thruster_1<1500 and thruster_2<1500 :
@@ -107,5 +142,10 @@ class Movements(QObject):
       self.ui.circularProgress.setStyleSheet(style)
       if sample==True :
         self.ui.sampletool.setStyleSheet("border: 2px solid #2E2E2E;background-color: #059212;")
+        # self.engine.say("Sample is being sucked")
+        # self.engine.runAndWait()
+
       else :
         self.ui.sampletool.setStyleSheet("border: 2px solid #2E2E2E;background-color: #C70606")
+        # self.engine.say("Closing The valve")
+        # self.engine.runAndWait()
