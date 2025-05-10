@@ -8,12 +8,12 @@ class JoystickController:
         pygame.joystick.init()
         self.connect_joystick()
         print(f"Initialized Joystick: {self.joystick.get_name()}")
-        self.prev_1 = self.prev_2 = self.prev_3 = self.prev_4 = self.prev_5 = 0
+        self.prev_1 = self.prev_2 = self.prev_4 = self.prev_5 = 0
         self.pump_1 = self.pump_3 = self.pump_4 = self.pump_6 = 0
         self.pwm_1 = self.pwm_3 = self.pwm_4 = self.pwm_6 = 0
-        self.thruster_1 = self.thruster_2 = 1500
+        self.thruster_1 = self.thruster_2 = self.thruster_3 = self.thruster_4= 1500
         self.gripper_1, self.gripper_2 = False, False
-        self.servo_motor = 0
+        
         self.suction_tool = False
     def connect_joystick(self):
 
@@ -61,11 +61,11 @@ class JoystickController:
 
         up_down = self.joystick.get_axis(3)
         if up_down < -0.1:
-            self.thruster_1 = self.thruster_2 = int(JoystickController.map_value(abs(up_down),0,1,1500,1200))
+            self.thruster_1 = self.thruster_2  = self.thruster_3 = self.thruster_4= int(JoystickController.map_value(abs(up_down),0,1,1500,1200))
         elif up_down > 0.1:
-            self.thruster_1 =  self.thruster_2 = int(JoystickController.map_value(up_down,0,1,1500,1800))
+            self.thruster_1 =  self.thruster_2 = self.thruster_3 = self.thruster_4 = int(JoystickController.map_value(up_down,0,1,1500,1800))
         else:
-            self.thruster_1 = self.thruster_2 = 1500
+            self.thruster_1 = self.thruster_2 = self.thruster_3 = self.thruster_4 = 1500
         rotate_right = self.joystick.get_axis(4)
         if rotate_right != -1:
             pwm = int(255 * JoystickController.map_value(rotate_right, -1, 1, 0, 1))
@@ -87,9 +87,7 @@ class JoystickController:
             self.gripper_2 = not self.gripper_2
         self.prev_2 = self.joystick.get_button(1)
 
-        if self.prev_3 == 0 and self.joystick.get_button(2) == 1:
-            self.servo_motor = (self.servo_motor + 10) % 180
-        self.prev3 = self.joystick.get_button(2)
+        
 
         if self.prev_4 == 0 and self.joystick.get_button(3) == 1:
             self.servo_motor = (self.servo_motor - 10) % 180
@@ -101,6 +99,7 @@ class JoystickController:
     def get_message(self):
         return (
             f"{self.thruster_1:04d}{self.thruster_2:04d}"
+            f"{self.thruster_3:04d}{self.thruster_4:04d}"
             f"{self.pwm_1:03d}{self.pump_1}"
             
             f"{self.pwm_3:03d}{self.pump_3}"
@@ -108,7 +107,7 @@ class JoystickController:
           
             f"{self.pwm_6:03d}{self.pump_6}"
             f"{int(self.gripper_1)}{int(self.gripper_2)}"
-            f"{self.servo_motor:03d}{int(self.suction_tool)}"
+            f"{int(self.suction_tool)}"
         )
 
 

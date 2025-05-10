@@ -3,25 +3,30 @@
 #include <Wire.h>
 #include <Servo.h>
 #include "MS5837.h"
-#include <MPU6050_tockn.h>
+//#include <MPU6050_tockn.h>
 
-MS5837 sensor;
+//MS5837 sensor;
 
-MPU6050 mpu6050(Wire);
+//MPU6050 mpu6050(Wire);
 // Create a Servo object to control the ESC
 Servo thruster1;
 Servo thruster2;
-
+Servo thruster3;
+Servo thruster4;
 #define PH_pin A10   // ph sensor pin define
 #define LEAK_pin 48  //lesk sensor pin define
+
+//#define DE_RE 23
+
 
 #define W5500_RESET_PIN 44  // Define a reset pin for the W5500
 
 // Pin Definitions
 const int bilgePwmPins[4] = { 7, 8, 9, 11 };
 const int bilgeControlPins[4] = { 25, 23, 20, 21 };
-const int gripper1Pin = 45;
-const int gripper2Pin = 49;
+const int gripper1Pin = 39;
+const int gripper2Pin = 45;
+const int suctionTool = 35;
 
 // Ethernet settings
 byte mac[] = { 0x02, 0xAB, 0xCD, 0xEF, 0x12, 0x34 };
@@ -34,22 +39,29 @@ unsigned long lastSendTime = 0;          // Store the last send time
 const unsigned long sendInterval = 500;  // Send data every 500ms
 
 void setup() {
-  Wire.begin();
+  Serial.begin(115200);
+//  pinMode(DE_RE, OUTPUT);
+//  digitalWrite(DE_RE, LOW); // Receive mode
+//  Wire.begin();
+   
+
   // Initialize pressure sensor
   // Returns true if initialization was successful
   // We can't continue with the rest of the program unless we can initialize the sensor
-  while (!sensor.init()) {
-    Serial.println("Init failed!");
-    Serial.println("Are SDA/SCL connected correctly?");
-    Serial.println("Blue Robotics Bar30: White=SDA, Green=SCL");
-    Serial.println("\n\n\n");
-    delay(5000);
-  }
-  sensor.setFluidDensity(997);
+//  if (!sensor.init()) {
+//    Serial.println("Init failed!");
+//    Serial.println("Are SDA/SCL connected correctly?");
+//    Serial.println("Blue Robotics Bar30: White=SDA, Green=SCL");
+//    Serial.println("\n\n\n");
+//    delay(5000);
+//  }
+   
+//  sensor.setFluidDensity(997);
   thruster1.attach(2);
   thruster2.attach(3);
-  Serial.begin(9600);
-
+  thruster3.attach(4);
+  thruster4.attach(22);
+  
   pinMode(W5500_RESET_PIN, OUTPUT);
   digitalWrite(W5500_RESET_PIN, HIGH);  // Ensure it's not resetting initially
 
@@ -60,10 +72,13 @@ void setup() {
   }
   pinMode(gripper1Pin, OUTPUT);
   pinMode(gripper2Pin, OUTPUT);
+  pinMode(suctionTool, OUTPUT);
 
-  Wire.begin();
   // IMU INTIALIZATION
-  mpu6050.begin();
+//  mpu6050.begin();
+  Serial.println("hello");
+
+//  Serial.println("hello");
   // mpu6050.calcGyroOffsets(true);
 
   resetEthernet();  // Reset the W5500 before starting
@@ -71,13 +86,12 @@ void setup() {
 }
 
 void loop() {
-
   Ethernet.maintain();
 
   // delay(500);
   if (!client.connected() || Ethernet.linkStatus() == 2) {
     Serial.println("Lost connection to server. Reconnecting...");
-    // resetEthernet();
+     resetEthernet();
     reconnectToServer();
     // Serial.println("Done");
   }
@@ -85,8 +99,8 @@ void loop() {
   while (client.available()) {
     String receivedData = client.readStringUntil('\n');
     // Serial.print("Received from server: ");
-    // Serial.println(receivedData);
-    if (receivedData.length() != 26) continue;
+     Serial.println(receivedData);
+    if (receivedData.length() != 30) continue;
     moveAll(receivedData);
     delay(50);
     // delay(1000);
@@ -111,11 +125,19 @@ void resetEthernet() {
 // Function to connect to the server
 void connectToServer() {
   Serial.print("Connecting to server... ");
-  if (client.connect(server, serverPort)) {
+  Ethernet.begin(mac, ip);
+  delay(1000);
+  while(1){
+     if (client.connect(server, serverPort)) {
     Serial.println("Connected!");
+    Serial.println(Ethernet.localIP());
+    break;
   } else {
+     Serial.println(Ethernet.localIP());
     Serial.println("Connection failed.");
   }
+  }
+ 
 }
 
 // Function to reconnect if connection is lost
@@ -148,26 +170,27 @@ void sendSensorsData() {
 
   // Read IMU data
 
-  mpu6050.update();
-  float angle_x = mpu6050.getAngleX();
-  float angle_y = mpu6050.getAngleY();
-  float angle_z = mpu6050.getAngleZ();
+//  mpu6050.update();
+//  float angle_x = mpu6050.getAngleX();
+//  float angle_y = mpu6050.getAngleY();
+ float angle_z = mpu6050.getAngleZ();
+ String angleZ = formatIMU(int(angle_z));
 
   //handeling chars of imu
 
 
   // Read Bar30 sensor data
-  sensor.read();
+//  sensor.read();
 
   String readings;
   if (PH <= 9 && sensor.depth()<0) {
-    readings = "0" + String(PH, 2) + String(sensor.depth(), 2) + String(angle_x, 0) + String(angle_y, 0) + String(angle_z, 0);
+    readings = "0" + String(PH, 2) + String(sensor.depth(), 2) + String(angleZ, 0);
   } else if  (PH <= 9 && sensor.depth()>=0){
-    readings ="0"+ String(PH, 2) +"0" +String(sensor.depth(), 2) + String(angle_x, 0) + String(angle_y, 0) + String(angle_z, 0);
+    readings ="0"+ String(PH, 2) +"0" +String(sensor.depth(), 2) + String(angleZ, 0);
   }else if (PH > 9 && sensor.depth()<0){
-     readings = String(PH, 2) + String(sensor.depth(), 2) + String(angle_x, 0) + String(angle_y, 0) + String(angle_z, 0);
+     readings = String(PH, 2) + String(sensor.depth(), 2) + String(angleZ, 0);
   }else if (PH > 9 && sensor.depth()>=0){
-    readings = String(PH, 2) +"0"+ String(sensor.depth(), 2) + String(angle_x, 0) + String(angle_y, 0) + String(angle_z, 0);
+    readings = String(PH, 2) +"0"+ String(sensor.depth(), 2) + String(angleZ, 0);
   }
 
   // String readings;
@@ -200,28 +223,43 @@ void sendSensorsData() {
 void moveThrusters(String message) {
   String thruster1Val = message.substring(0, 4);
   String thruster2Val = message.substring(4, 8);
+  String thruster3Val = message.substring(8,12);
+  String thruster4Val = message.substring(12,16);
+  String servoToolVal = message.substring(26, 29);
+
   thruster1.writeMicroseconds(thruster1Val.toInt());
   thruster2.writeMicroseconds(thruster2Val.toInt());
+  thruster3.writeMicroseconds(thruster3Val.toInt());
+  thruster4.writeMicroseconds(thruster4Val.toInt());
 }
 
 void moveBilges(String message) {
+  Serial.println(message);
   for (int i = 0; i < 4; i++) {
-    String bilgePwmVal = message.substring(8 + i * 4, 11 + i * 4);
-    String bilgeControlVal = message.substring(11 + i * 4, 12 + i * 4);
+    String bilgePwmVal = message.substring(16 + i * 4, 19 + i * 4);
+    String bilgeControlVal = message.substring(19 + i * 4, 20 + i * 4);
     analogWrite(bilgePwmPins[i], bilgePwmVal.toInt());
     digitalWrite(bilgeControlPins[i], bilgeControlVal.toInt());
+  
+
   }
 }
 
 void moveGrippers(String message) {
-  String gripper1Val = message.substring(24, 25);
-  String gripper2Val = message.substring(25, 26);
+  String gripper1Val = message.substring(32, 33);
+  String gripper2Val = message.substring(33, 34);
+  String suctionToolVal = message.substring(34,35);
+  Serial.println(suctionToolVal);
+//  String suctionToolVal = message.substring(30,31);
   digitalWrite(gripper1Pin, gripper1Val.toInt());
   digitalWrite(gripper2Pin, gripper2Val.toInt());
+  digitalWrite(suctionTool, suctionToolVal.toInt());
+  
 }
 
 void moveAll(String message) {
-  if (message.length() != 26) return;
+  if (message.length() != 35) return;
+  Serial.println("wslt");
   moveThrusters(message);
   moveBilges(message);
   moveGrippers(message);
