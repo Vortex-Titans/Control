@@ -15,13 +15,26 @@ class JoystickController(QThread):
         self.gain = 1.0
         self.speed = 255 * self.gain
         self.prev_gain_btn = 0
-        self.prev_1 = self.prev_2 = self.prev_5= 0
-        self.pump_1 = self.pump_3 = self.pump_4 = self.pump_6 = 0
-        self.pwm_1 = self.pwm_3 = self.pwm_4 = self.pwm_6 = 0
+        self.prev_gripper_1_value = self.prev_gripper_2_value = self.prev_suction_tool_value = 0
+        self.back_left_dir = self.front_left_dir = self.back_right_dir = self.front_right_dir = 0
+        self.back_left_pwm = self.front_left_pwm = self.back_right_pwm = self.front_right_pwm = 0
         self.thruster_1 = self.thruster_2  = self.thruster_3 = self.thruster_4 = 1500
         self.gripper_1, self.gripper_2 = False, False
 
-        self.kp = 2
+
+        # check which motors work and which dont
+        self.motor_1 = True
+        self.motor_2 = True
+        self.motor_3 = True
+        self.motor_4 = True
+        self.thruster_check_1 = True
+        self.thruster_check_2 = True
+        self.thruster_check_3 = True
+        self.thruster_check_4 = True
+
+        self.messege = "11111111"  #messege format will be adjusted with gui
+        
+        self.kp = 2   #increase to increase pid correction values
         self.ki = 0.001
         self.kd = 0.0001
 
@@ -51,7 +64,7 @@ class JoystickController(QThread):
     def map_value(x, in_min, in_max, out_min, out_max):
         return (x - in_min) / (in_max - in_min) * (out_max - out_min) + out_min
     
-    def pid_control(self):
+    def pid_control(self):        #pid algoritm and return correction value to be added to motors
 
         error = self.setpoint_yaw - self.current_value_yaw
 
@@ -68,66 +81,108 @@ class JoystickController(QThread):
         self.past_derivative_yaw = d
 
         return output
-    def reset_pid_variables(self):
+    def reset_pid_variables(self):  #resets pid values when new setpoint is set to avoid using old values
         self.integral_yaw = 0
         self.previous_error_yaw = 0
         self.past_derivative_yaw = 0
         self.setpoint_yaw = None
-    def check_button_pushed(self , prev , joystick_readings , button):
+    def check_button_pushed(self , prev , joystick_readings , button): #checks if a button is clicked
         
         if prev == 0 and joystick_readings == 1:
             button = not button
         prev = joystick_readings
         
+    def check_set_motors_thrusters_activated(self, messege ):    #checks which motors and algorithms are working and which arent 
+
+        self.motors_1 = True if messege[0] == int(1) else 0
+        self.motors_2 = True if messege[1] == int(1) else 0
+        self.motors_3 = True if messege[2] == int(1) else 0
+        self.motors_4 = True if messege[3] == int(1) else 0
+        self.thruster_1 = True if messege[4] == int(1) else 0
+        self.thruster_2 = True if messege[5] == int(1) else 0
+        self.thruster_3 = True if messege[6] == int(1) else 0
+        self.thruster_4 = True if messege[7] == int(1) else 0
+
+    
     def update_controls(self):
         pygame.event.pump()
         # os.system("cls" if os.name == "nt" else "clear")
+
+        
+        self.check_set_motors_thrusters_activated(self.messege)
+
+
         y_axis = self.joystick.get_axis(1)
         x_axis = self.joystick.get_axis(0)
+
+
         if abs(y_axis) > abs(x_axis):
             pwm = int(abs(y_axis) * self.speed)
-            self.pwm_1 = self.pwm_3 = self.pwm_4 = self.pwm_6 = pwm
+            self.back_left_pwm = pwm if self.motors_1 else 0
+            self.front_left_pwm = pwm if self.motors_2 else 0
+            self.back_right_pwm = pwm if self.motors_3 else 0
+            self.front_right_pwm = pwm if self.motors_4 else 0
             if y_axis < 0 :
-                self.pump_1, self.pump_3, self.pump_4, self.pump_6 = 1,1,1,0
+                self.back_left_dir, self.front_left_dir, self.back_right_dir, self.front_right_dir = 1,1,1,0
             else:
-                self.pump_1, self.pump_3, self.pump_4, self.pump_6 = 0,0,0,1
+                self.back_left_dir, self.front_left_dir, self.back_right_dir, self.front_right_dir = 0,0,0,1
         elif abs(x_axis) > abs(y_axis):
             if x_axis > 0:
                 pwm = int(abs(x_axis) * self.speed)
-                self.pwm_1 = self.pwm_3 = self.pwm_4 = self.pwm_6 = self.speed
-                # self.pwm_4 = self.speed
-                self.pump_1 = 0# Back left
-                self.pump_3 = 1 # Front left
-                self.pump_4 = 1# Back right
-                self.pump_6 = 1 # Front right
+                
+                self.back_left_pwm = pwm if self.motors_1 else 0
+                self.front_left_pwm = pwm if self.motors_2 else 0
+                self.back_right_pwm = pwm if self.motors_3 else 0
+                self.front_right_pwm = pwm if self.motors_4 else 0
+                # self.pwm_4 = self.spee
+                self.back_left_dir = 0# Back left
+                self.front_left_dir = 1 # Front left
+                self.back_right_dir = 1# Back right
+                self.front_right_dir = 1 # Front right
             else:
                 pwm = int(abs(x_axis) * self.speed)
-                self.pwm_1 = self.pwm_3 = self.pwm_4 = self.pwm_6 = self.speed
+                self.back_left_pwm = pwm if self.motors_1 else 0
+                self.front_left_pwm = pwm if self.motors_2 else 0
+                self.back_right_pwm = pwm if self.motors_3 else 0
+                self.front_right_pwm = pwm if self.motors_4 else 0
                 # self.pwm_6 = self.speed
-                self.pump_1 = 1
-                self.pump_3 = 0
-                self.pump_4 = 0
-                self.pump_6 = 0
+                self.back_left_dir = 1
+                self.front_left_dir = 0
+                self.back_right_dir = 0
+                self.front_right_dir = 0
         up_down = self.joystick.get_axis(3)
         if up_down < -0.1:
             delta = int(300 * abs(up_down) * self.gain)  # backward
-            self.thruster_1 = self.thruster_2  = self.thruster_3 = self.thruster_4 = 1500 - delta
+            self.thruster_1 = 1500 - delta if self.thruster_check_1 else 1500
+            self.thruster_2 = 1500 - delta if self.thruster_check_2 else 1500
+            self.thruster_3 = 1500 - delta if self.thruster_check_3 else 1500
+            self.thruster_4 = 1500 - delta if self.thruster_check_4 else 1500
+            
         elif up_down > 0.1:
             delta = int(300 * up_down * self.gain)  # forward
-            self.thruster_1 = self.thruster_2  = self.thruster_3 = self.thruster_4 = 1500 + delta
+            self.thruster_1 = 1500 + delta if self.thruster_check_1 else 1500
+            self.thruster_2 = 1500 + delta if self.thruster_check_2 else 1500
+            self.thruster_3 = 1500 + delta if self.thruster_check_3 else 1500
+            self.thruster_4 = 1500 + delta if self.thruster_check_4 else 1500
         else:
             self.thruster_1 = self.thruster_2  = self.thruster_3 = self.thruster_4 = 1500
 
         rotate_right = self.joystick.get_axis(5)
         if rotate_right != -1:
             pwm = int(self.speed * JoystickController.map_value(rotate_right, -1, 1, 0, 1))
-            self.pwm_1 = self.pwm_3 = self.pwm_4 = self.pwm_6 = pwm
-            self.pump_1, self.pump_3, self.pump_4, self.pump_6 = 1,1,0,1
+            self.back_left_pwm = pwm if self.motors_1 else 0
+            self.front_left_pwm = pwm if self.motors_2 else 0
+            self.back_right_pwm = pwm if self.motors_3 else 0
+            self.front_right_pwm = pwm if self.motors_4 else 0
+            
+            self.back_left_dir, self.front_left_dir, self.back_right_dir, self.front_right_dir = 1,1,0,1
         rotate_left = self.joystick.get_axis(4)
         if rotate_left != -1:
             pwm = int(self.speed * JoystickController.map_value(rotate_left, -1, 1, 0, 1))
-            self.pwm_1 = self.pwm_3 = self.pwm_4 = self.pwm_6 = pwm
-            self.pump_1, self.pump_3, self.pump_4, self.pump_6 = 0,0,1,0
+            self.back_left_pwm = pwm if self.motors_1 else 0
+            self.front_left_pwm = pwm if self.motors_2 else 0
+            self.back_right_pwm = pwm if self.motors_3 else 0
+            self.front_right_pwm = pwm if self.motors_4 else 0
             
         #gain
         if self.prev_gain_btn == 0 and self.joystick.get_button(6) == 1:
@@ -141,23 +196,23 @@ class JoystickController(QThread):
 
         
         # grippers , R1 & L1
-        self.check_button_pushed(self.prev_1 , self.joystick.get_button(4) , self.gripper_1)
-        self.check_button_pushed(self.prev_2 , self.joystick.get_button(5), self.gripper_2)
+        self.check_button_pushed(self.prev_gripper_1_value , self.joystick.get_button(4) , self.gripper_1)
+        self.check_button_pushed(self.prev_gripper_2_value , self.joystick.get_button(5), self.gripper_2)
         
         # servo ,
         
         # suction tool , button X
-        self.check_button_pushed(self.prev_5 , self.joystick.get_button(0) , self.suction_tool)
+        self.check_button_pushed(self.prev_suction_tool_value , self.joystick.get_button(0) , self.suction_tool)
         
         
     def get_message(self):
         return (
             f"{int(self.thruster_1):04d}{int(self.thruster_2):04d}"
             f"{int(self.thruster_4):04d}{int(self.thruster_3):04d}"
-            f"{int(self.pwm_1):03d}{int(self.pump_1)}"
-            f"{int(self.pwm_3):03d}{int(self.pump_3)}"
-            f"{int(self.pwm_4):03d}{int(self.pump_4)}"
-            f"{int(self.pwm_6):03d}{int(self.pump_6)}"
+            f"{int(self.back_left_pwm):03d}{int(self.back_left_dir)}"
+            f"{int(self.front_left_pwm):03d}{int(self.front_left_dir)}"
+            f"{int(self.back_right_pwm):03d}{int(self.back_right_dir)}"
+            f"{int(self.front_right_pwm):03d}{int(self.front_right_dir)}"
             f"{int(self.gripper_1)}{int(self.gripper_2)}"
             f"{int(self.suction_tool)}\n"
         )
