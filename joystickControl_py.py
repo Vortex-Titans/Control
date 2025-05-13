@@ -73,6 +73,12 @@ class JoystickController(QThread):
         self.previous_error_yaw = 0
         self.past_derivative_yaw = 0
         self.setpoint_yaw = None
+    def check_button_pushed(self , prev , joystick_readings , button):
+        
+        if prev == 0 and joystick_readings == 1:
+            button = not button
+        prev = joystick_readings
+        
     def update_controls(self):
         pygame.event.pump()
         # os.system("cls" if os.name == "nt" else "clear")
@@ -125,31 +131,24 @@ class JoystickController(QThread):
             
         #gain
         if self.prev_gain_btn == 0 and self.joystick.get_button(6) == 1:
-            if self.gain == 1.0:
-                self.gain = 0.25
-            elif self.gain == 0.25:
-                self.gain = 0.5
-            else:
-                self.gain = 1.0
-            self.speed = int(255 * self.gain)  # <--- Add this line
+            self.gain += 0.25
+            if self.gain > 1:
+                self.gain = 0
+        self.speed = int(255 * self.gain)  # <--- Add this line
         self.gain_signal.emit(self.gain)
         self.prev_gain_btn =  self.joystick.get_button(6)
 
 
-
+        
         # grippers , R1 & L1
-        if self.prev_1 == 0 and self.joystick.get_button(4) == 1:
-            self.gripper_1 = not self.gripper_1
-        self.prev_1 = self.joystick.get_button(4)
-        if self.prev_2 == 0 and  self.joystick.get_button(5):
-            self.gripper_2 = not self.gripper_2
-        self.prev_2 = self.joystick.get_button(5)
+        self.check_button_pushed(self.prev_1 , self.joystick.get_button(4) , self.gripper_1)
+        self.check_button_pushed(self.prev_2 , self.joystick.get_button(5), self.gripper_2)
+        
         # servo ,
         
         # suction tool , button X
-        if self.prev_5 == 0 and self.joystick.get_button(0) == 1:
-            self.suction_tool = not self.suction_tool
-        self.prev_5 = self.joystick.get_button(0)
+        self.check_button_pushed(self.prev_5 , self.joystick.get_button(0) , self.suction_tool)
+        
         
     def get_message(self):
         return (
