@@ -13,7 +13,7 @@ class JoystickController(QThread):
         pygame.joystick.init()
         self.joystick = None
         self.gain = 1.0
-        self.speed = 255 * self.gain
+        
         self.prev_gain_btn = 0
         self.prev_gripper_1_value = self.prev_gripper_2_value = self.prev_suction_tool_value = 0
         self.back_left_dir = self.front_left_dir = self.back_right_dir = self.front_right_dir = 0
@@ -22,17 +22,17 @@ class JoystickController(QThread):
         self.gripper_1, self.gripper_2 = False, False
 
 
-        # check which motors work and which dont
-        self.motor_1 = True
-        self.motor_2 = True
-        self.motor_3 = True
-        self.motor_4 = True
-        self.thruster_check_1 = True
-        self.thruster_check_2 = True
-        self.thruster_check_3 = True
-        self.thruster_check_4 = True
+        # variables to save activation status of pelges and thrusters
+        self.back_left_belge_activation = True
+        self.front_left_belge_activation = True
+        self.back_right_belge_activation = True
+        self.front_right_belge_activation = True
+        self.thruster_1_activation = True
+        self.thruster_2_activation = True
+        self.thruster_3_activation = True
+        self.thruster_4_activation = True
 
-        self.messege = "11111111"  #messege format will be adjusted with gui
+        self.messege = "11111111"  #activation values for pelges and thrysters , 1 -> activated 0-> not
         
         self.kp = 2   #increase to increase pid correction values
         self.ki = 0.001
@@ -88,121 +88,155 @@ class JoystickController(QThread):
         self.setpoint_yaw = None
     def check_button_pushed(self , prev , joystick_readings , button): #checks if a button is clicked
         
-        if prev == 0 and joystick_readings == 1:
-            button = not button
-        prev = joystick_readings
+        if getattr(self,prev) == 0 and joystick_readings == 1:
+            setattr(self,button,not getattr(self, button))
+        setattr(self,prev,joystick_readings) 
         
-    def check_set_motors_thrusters_activated(self, messege ):    #checks which motors and algorithms are working and which arent 
+    def set_activation_messege(self):   #sets the messege value from GUI for pelges_thrusters activation
+        # getting the messege from GUI to sets the messege logic
 
-        self.motors_1 = True if messege[0] == int(1) else 0
-        self.motors_2 = True if messege[1] == int(1) else 0
-        self.motors_3 = True if messege[2] == int(1) else 0
-        self.motors_4 = True if messege[3] == int(1) else 0
-        self.thruster_1 = True if messege[4] == int(1) else 0
-        self.thruster_2 = True if messege[5] == int(1) else 0
-        self.thruster_3 = True if messege[6] == int(1) else 0
-        self.thruster_4 = True if messege[7] == int(1) else 0
+        #save the messege to self.messege variable
+        return  # was put to avoid errors before function inialization
+    def set_IMU_current_value(self):  #add angleZ IMU readings to self.current_yaw_value
+            #remove return after finishing 
+        return # was put to avoid errors before function inialization
+    def set_motors_thrusters_activation_status(self):    #checks which motors and algorithms are working and which arent 
+        
+        if self.messege is None or len(self.messege) != 8:
+            self.messege = None
+        else:
+            self.back_left_belge_activation = True if self.messege[0] == "1" else 0
+            self.front_left_belge_activation = True if self.messege[1] == "1" else 0
+            self.back_right_belge_activation = True if self.messege[2] == "1" else 0
+            self.front_right_belge_activation = True if self.messege[3] == "1" else 0
+            self.thruster_1_activation = True if self.messege[4] == "1" else 0
+            self.thruster_2_activation = True if self.messege[5] == "1" else 0
+            self.thruster_3_activation = True if self.messege[6] == "1" else 0
+            self.thruster_4_activation = True if self.messege[7] == "1" else 0
 
+    def resets_belges_thrusters_activation_messege(self):   
+        self.messege = None
+    def set_direction(self , back_left_direction , front_left_direction , back_right_direction , front_right_direction):  #sets the direction for pelges based on arguments
+        self.back_left_dir = back_left_direction
+        self.front_left_dir = front_left_direction
+        self.back_right_dir = back_right_direction
+        self.front_right_dir = front_right_direction
+
+    def set_pwm_for_pelges(self , pwm):
+
+        
+        self.back_left_pwm = pwm
+        self.front_left_pwm = pwm
+        self.back_right_pwm = pwm
+        self.front_right_pwm = pwm
+        
+    def set_thrusters_value(self , value):   #sets the thrusters value
+        self.thruster_1 = self.thruster_2 = value
+    def setting_belges_thrusters_pwm_based_on_activation(self):    # sets the the pwm or thruster value to 0 if not activated 
+        self.back_left_pwm = self.back_left_pwm if self.back_left_belge_activation else 0
+        self.front_left_pwm = self.front_left_pwm if self.front_left_belge_activation else 0
+        self.back_right_pwm = self.back_right_pwm if self.back_right_belge_activation else 0
+        self.front_right_pwm = self.front_right_pwm if self.front_right_belge_activation else 0
+
+        self.thruster_1 = self.thruster_1 if self.thruster_1_activation else 1500
+        self.thruster_2 = self.thruster_2 if self.thruster_2_activation else 1500
+        self.thruster_3 = self.thruster_3 if self.thruster_3_activation else 1500
+        self.thruster_4 = self.thruster_4 if self.thruster_4_activation else 1500
     
-    def update_controls(self):
-        pygame.event.pump()
-        # os.system("cls" if os.name == "nt" else "clear")
+    def up_down_movments(self , up_down):
+        delta = int(300 * abs(up_down) * self.gain)
+        if up_down < -0.1:
+            self.set_thrusters_value(1500 - delta)
 
-        
-        self.check_set_motors_thrusters_activated(self.messege)
-
-
-        y_axis = self.joystick.get_axis(1)
-        x_axis = self.joystick.get_axis(0)
-
-
+        elif up_down > 0.1:
+            self.set_thrusters_value(1500 + delta)
+        else:
+            self.set_thrusters_value(1500)
+    def horizontal_movments(self , x_axis, y_axis):
         if abs(y_axis) > abs(x_axis):
-            pwm = int(abs(y_axis) * self.speed)
-            self.back_left_pwm = pwm if self.motors_1 else 0
-            self.front_left_pwm = pwm if self.motors_2 else 0
-            self.back_right_pwm = pwm if self.motors_3 else 0
-            self.front_right_pwm = pwm if self.motors_4 else 0
+            pwm = int(abs(y_axis) * self.gain * 255)
+            self.set_pwm_for_pelges(pwm)
             if y_axis < 0 :
-                self.back_left_dir, self.front_left_dir, self.back_right_dir, self.front_right_dir = 1,1,1,0
+                self.set_direction(1,1,1,0)
+                self.thruster_3 = self.thruster_4 = 1500 - int(abs(y_axis) * self.gain * 300) 
+                
             else:
-                self.back_left_dir, self.front_left_dir, self.back_right_dir, self.front_right_dir = 0,0,0,1
+                self.set_direction(0,0,0,1)
+                self.thruster_3 = self.thruster_4 = int(abs(y_axis) * self.gain * 300) + 1500
         elif abs(x_axis) > abs(y_axis):
             if x_axis > 0:
-                pwm = int(abs(x_axis) * self.speed)
-                
-                self.back_left_pwm = pwm if self.motors_1 else 0
-                self.front_left_pwm = pwm if self.motors_2 else 0
-                self.back_right_pwm = pwm if self.motors_3 else 0
-                self.front_right_pwm = pwm if self.motors_4 else 0
+                pwm = int(abs(x_axis) * self.gain * 255)
+                self.set_pwm_for_pelges(pwm)
                 # self.pwm_4 = self.spee
-                self.back_left_dir = 0# Back left
-                self.front_left_dir = 1 # Front left
-                self.back_right_dir = 1# Back right
-                self.front_right_dir = 1 # Front right
+                self.set_direction(0,1,1,1)
             else:
-                pwm = int(abs(x_axis) * self.speed)
-                self.back_left_pwm = pwm if self.motors_1 else 0
-                self.front_left_pwm = pwm if self.motors_2 else 0
-                self.back_right_pwm = pwm if self.motors_3 else 0
-                self.front_right_pwm = pwm if self.motors_4 else 0
+                pwm = int(abs(x_axis) * self.gain * 255)
+                self.set_pwm_for_pelges(pwm)
                 # self.pwm_6 = self.speed
-                self.back_left_dir = 1
-                self.front_left_dir = 0
-                self.back_right_dir = 0
-                self.front_right_dir = 0
-        up_down = self.joystick.get_axis(3)
-        if up_down < -0.1:
-            delta = int(300 * abs(up_down) * self.gain)  # backward
-            self.thruster_1 = 1500 - delta if self.thruster_check_1 else 1500
-            self.thruster_2 = 1500 - delta if self.thruster_check_2 else 1500
-            self.thruster_3 = 1500 - delta if self.thruster_check_3 else 1500
-            self.thruster_4 = 1500 - delta if self.thruster_check_4 else 1500
-            
-        elif up_down > 0.1:
-            delta = int(300 * up_down * self.gain)  # forward
-            self.thruster_1 = 1500 + delta if self.thruster_check_1 else 1500
-            self.thruster_2 = 1500 + delta if self.thruster_check_2 else 1500
-            self.thruster_3 = 1500 + delta if self.thruster_check_3 else 1500
-            self.thruster_4 = 1500 + delta if self.thruster_check_4 else 1500
-        else:
-            self.thruster_1 = self.thruster_2  = self.thruster_3 = self.thruster_4 = 1500
-
-        rotate_right = self.joystick.get_axis(5)
+                self.set_direction(1,0,0,0)
+    def rotation_movments(self , rotate_left , rotate_right):
         if rotate_right != -1:
-            pwm = int(self.speed * JoystickController.map_value(rotate_right, -1, 1, 0, 1))
-            self.back_left_pwm = pwm if self.motors_1 else 0
-            self.front_left_pwm = pwm if self.motors_2 else 0
-            self.back_right_pwm = pwm if self.motors_3 else 0
-            self.front_right_pwm = pwm if self.motors_4 else 0
-            
-            self.back_left_dir, self.front_left_dir, self.back_right_dir, self.front_right_dir = 1,1,0,1
-        rotate_left = self.joystick.get_axis(4)
+            pwm = int(self.gain * JoystickController.map_value(rotate_right, -1, 1, 0, 1) * 255)
+            self.set_pwm_for_pelges(pwm)
+            self.thruster_3 = self.thruster_4 = int(JoystickController.map_value(rotate_right, -1, 1, 0, 1) * self.gain * 300) + 1500
+            self.set_direction(1,1,0,1)
+        
         if rotate_left != -1:
-            pwm = int(self.speed * JoystickController.map_value(rotate_left, -1, 1, 0, 1))
-            self.back_left_pwm = pwm if self.motors_1 else 0
-            self.front_left_pwm = pwm if self.motors_2 else 0
-            self.back_right_pwm = pwm if self.motors_3 else 0
-            self.front_right_pwm = pwm if self.motors_4 else 0
-            
-        #gain
-        if self.prev_gain_btn == 0 and self.joystick.get_button(6) == 1:
-            self.gain += 0.25
-            if self.gain > 1:
-                self.gain = 0
-        self.speed = int(255 * self.gain)  # <--- Add this line
+            pwm = int(self.gain * JoystickController.map_value(rotate_left, -1, 1, 0, 1) * 255)
+            self.thruster_3 = self.thruster_4 = 1500 - int(JoystickController.map_value(rotate_left, -1, 1, 0, 1) * self.gain * 300)
+            self.set_pwm_for_pelges(pwm)
+            self.set_direction(1,0,0,0)
+
+    def gain_function(self, joystick_value):
+
+        if self.prev_gain_btn == 0 and joystick_value == 1:
+            if self.gain == 1.0:
+                self.gain = 0.25
+            elif self.gain == 0.75:
+                self.gain = 1.0
+            elif self.gain == 0.5:
+                self.gain = 0.75
+            elif self.gain == 0.25:
+                self.gain = 0.5
+        
         self.gain_signal.emit(self.gain)
-        self.prev_gain_btn =  self.joystick.get_button(6)
+        self.prev_gain_btn = joystick_value
+
+    def update_controls(self):
+        pygame.event.pump()
+        os.system("cls" if os.name == "nt" else "clear")
+
+        self.set_activation_messege()
+        self.set_motors_thrusters_activation_status()
+
+        x_axis = self.joystick.get_axis(0)
+        y_axis = self.joystick.get_axis(1)
+        up_down = self.joystick.get_axis(3)
+        rotate_left = self.joystick.get_axis(4)
+        rotate_right = self.joystick.get_axis(5)
+
+        self.horizontal_movments(x_axis , y_axis)
+        
+        self.up_down_movments(up_down)
+
+        
+        self.rotation_movments(rotate_left , rotate_right)
+        #gain
+        self.gain_function(self.joystick.get_button(6))
 
 
         
         # grippers , R1 & L1
-        self.check_button_pushed(self.prev_gripper_1_value , self.joystick.get_button(4) , self.gripper_1)
-        self.check_button_pushed(self.prev_gripper_2_value , self.joystick.get_button(5), self.gripper_2)
+        self.check_button_pushed("prev_gripper_1_value" , self.joystick.get_button(4) , "gripper_1")
+        self.check_button_pushed("prev_gripper_2_value" , self.joystick.get_button(5), "gripper_2")
         
-        # servo ,
+        
         
         # suction tool , button X
-        self.check_button_pushed(self.prev_suction_tool_value , self.joystick.get_button(0) , self.suction_tool)
+        self.check_button_pushed("prev_suction_tool_value" , self.joystick.get_button(0) , "suction_tool")
+
+        self.setting_belges_thrusters_pwm_based_on_activation()  #sets not activated pelge_thrusters to 0 or 1500
+        self.resets_belges_thrusters_activation_messege()  # resets the messege to None
         
         
     def get_message(self):
@@ -224,7 +258,9 @@ class JoystickController(QThread):
         if self.joystick:
             self.update_controls()
             msg = self.get_message()
-            # print(msg)
+            
+            print(msg)
+            print(len(msg))
             self.message_signal.emit(msg)
         else:
              msg = "00000000000000000000000000"  # Default message when no joystick
