@@ -227,7 +227,7 @@ void moveGrippers(String message) {
 }
 
 void moveAll(String message) {
-  if (message.length() != 35) return;
+  if (message.length() != 36) return;
   Serial.println("wslt");
   moveThrusters(message);
   moveBilges(message);
