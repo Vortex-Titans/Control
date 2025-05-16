@@ -2,10 +2,13 @@
 #include <Ethernet.h>
 #include <Wire.h>
 #include <Servo.h>
+#include <MPU6050_tockn.h>                                                                    //added this library
 #include "MS5837.h"
-//#include <MPU6050_tockn.h>
 
-//MS5837 sensor;
+                                                                                              //remove that library
+
+
+MS5837 sensor;
 
 //MPU6050 mpu6050(Wire);
 // Create a Servo object to control the ESC
@@ -13,11 +16,11 @@ Servo thruster1;
 Servo thruster2;
 Servo thruster3;
 Servo thruster4;
-#define PH_pin A10   // ph sensor pin define
+#define PH_pin A10   // ph sensor pin define                                                   
 #define LEAK_pin 48  //lesk sensor pin define
 
 //#define DE_RE 23
-
+MPU6050 mpu6050(Wire);                                                                         //mpu6050 initialised
 
 #define W5500_RESET_PIN 44  // Define a reset pin for the W5500
 
@@ -42,21 +45,14 @@ void setup() {
   Serial.begin(115200);
 //  pinMode(DE_RE, OUTPUT);
 //  digitalWrite(DE_RE, LOW); // Receive mode
-//  Wire.begin();
+    Wire.begin();
+   
+                                                                                                        //remove this comments
+ 
    
 
-  // Initialize pressure sensor
-  // Returns true if initialization was successful
-  // We can't continue with the rest of the program unless we can initialize the sensor
-//  if (!sensor.init()) {
-//    Serial.println("Init failed!");
-//    Serial.println("Are SDA/SCL connected correctly?");
-//    Serial.println("Blue Robotics Bar30: White=SDA, Green=SCL");
-//    Serial.println("\n\n\n");
-//    delay(5000);
-//  }
-   
-//  sensor.setFluidDensity(997);
+  mpu6050.begin();        
+  mpu6050.calcGyroOffsets(true);                                                                     //added this function
   thruster1.attach(2);
   thruster2.attach(3);
   thruster3.attach(4);
@@ -100,7 +96,7 @@ void loop() {
     String receivedData = client.readStringUntil('\n');
     // Serial.print("Received from server: ");
      Serial.println(receivedData);
-    if (receivedData.length() != 30) continue;
+    if (receivedData.length() != 35) continue;
     moveAll(receivedData);
     delay(50);
     // delay(1000);
@@ -164,23 +160,18 @@ void sendSensorsData() {
   // }
   // lastSendTime = millis();  // Update last send time
 
-  int analogValue = analogRead(PH_pin);
+  int analogValue = analogRead(PH_pin);                                    //remove that variable
   float voltage = analogValue * (5.0 / 1023.0);
   float PH = (3.5 * voltage);
 
   // Read IMU data
 
-//  mpu6050.update();
-//  float angle_x = mpu6050.getAngleX();
-//  float angle_y = mpu6050.getAngleY();
+  mpu6050.update();
+
  float angle_z = mpu6050.getAngleZ();
  String angleZ = formatIMU(int(angle_z));
 
-  //handeling chars of imu
-
-
-  // Read Bar30 sensor data
-//  sensor.read();
+  
 
   String readings;
   if (PH <= 9 && sensor.depth()<0) {
@@ -191,31 +182,9 @@ void sendSensorsData() {
      readings = String(PH, 2) + String(sensor.depth(), 2) + String(angleZ, 0);
   }else if (PH > 9 && sensor.depth()>=0){
     readings = String(PH, 2) +"0"+ String(sensor.depth(), 2) + String(angleZ, 0);
-  }
+  }                                                     //remove these comments
 
-  // String readings;
-  // // Get IMU values (Replace with actual function calls)
-  // int anglex = mpu6050.getAngleX();
-  // int angley = mpu6050.getAngleY();
-  // int anglez = mpu6050.getAngleZ();
-
-  // // Formatting PH and Depth
-  // String phStr = (PH < 10) ? "0" + String(PH, 2) : String(PH, 2);
-  // String depthStr = (sensor.depth() < 0) ? String(sensor.depth(), 2) : "0" + String(sensor.depth(), 2);
-
-  // // Formatting IMU Angles (Each must be 4 chars with sign)
-  // auto formatIMU = [](int angle) {
-  //     String str = (angle < 0) ? String(angle) : "+" + String(angle);
-  //     while (str.length() < 4) str = str[0] + String("0") + str.substring(1);
-  //     return str;
-  // };
-
-  // String imuXStr = formatIMU(anglex);
-  // String imuYStr = formatIMU(angley);
-  // String imuZStr = formatIMU(anglez);
-
-  // // Constructing final message
-  // readings = phStr + depthStr + imuXStr + imuYStr + imuZStr ;
+ 
   Serial.println(readings);
   client.print(readings);
 }
